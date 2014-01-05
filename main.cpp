@@ -33,7 +33,7 @@ const std::string SPRITE_DIR = "images/";
  */
 void logSDLError( const std::string &message ) 
 {
-        std::cout << "Error: " << message << SDL_GetError() << std::endl;
+        std::cout << "Error: " << message << " " << SDL_GetError() << std::endl;
 }
 
 /**
@@ -133,7 +133,7 @@ int main(int argc, const char *argv[])
         // load image into spritesheets[]
         //
         // Currently place holder that will only load green cables.
-        SDL_Texture *spriteSheet = loadTexture( "./image/power_cond_green.bmp", mainRenderer);
+        SDL_Texture *spriteSheet = loadTexture( "./image/power_cond_green.png", mainRenderer);
 
         // And check every file to see if it loaded successfully
         //
