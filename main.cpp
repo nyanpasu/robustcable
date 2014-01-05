@@ -19,14 +19,21 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+// Constant definitions.
+
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
 const int TOTAL_WIRE_SPRITES_ACROSS = 9;
 const int TOTAL_WIRE_SPRITES_DOWN   = 8;
+const int SPRITE_SIZE               = 32;
 const int TOTAL_WIRE_SPRITES        = TOTAL_WIRE_SPRITES_ACROSS * TOTAL_WIRE_SPRITES_DOWN;
 
 const std::string SPRITE_DIR = "images/";
+
+// End of constant definitions.
+
+// Function definitions.
 
 /**
  * Makes a lot of noise when something goes wrong.
@@ -38,8 +45,7 @@ void logSDLError( const std::string &message )
 
 /**
  * Loads a BMP image into a texture, then onto the rendering device
- * TODO: Add PNG support
- * @param file The BMP image to load
+ * @param file The image to load
  * @param renderer The renderer to load the texture onto
  * @return the loaded texture, or nullptr if something went wrong.
  */
@@ -53,6 +59,14 @@ SDL_Texture *loadTexture( const std::string &file, SDL_Renderer *renderer )
         }
 
         return texture;
+}
+
+/**
+ * Loads a (something) and producesa blitted surface
+ * @param file 
+ */
+SDL_Surface *blitSurface()
+{
 }
 
 /**
@@ -75,6 +89,24 @@ void renderTexture( SDL_Texture *texture, SDL_Renderer *renderer, int x, int y, 
         SDL_RenderCopy( renderer, texture, NULL, &destination );
 }
 
+/**
+ * Process a wire sprite sheet into seperate sheets based on the global constants
+ * @param file The sprite sheet
+ * @return the array containing each sprite.
+ */
+SDL_Texture *loadSprite( SDL_Surface *spriteSheet, SDL_Renderer *renderer, int x, int y )
+{
+        SDL_Rect clip;
+        clip.x = x * SPRITE_SIZE;
+        clip.y = y * SPRITE_SIZE;
+        clip.w = SPRITE_SIZE;
+        clip.h = SPRITE_SIZE;
+
+        SDL_Surface *sprite;
+
+        SDL_BlitSurface( spriteSheet, NULL, sprite, NULL);
+        return SDL_CreateTextureFromSurface( renderer, sprite);
+}
 
 int main(int argc, const char *argv[])
 {
@@ -133,7 +165,7 @@ int main(int argc, const char *argv[])
         // load image into spritesheets[]
         //
         // Currently place holder that will only load green cables.
-        SDL_Texture *spriteSheet = loadTexture( "./image/power_cond_green.png", mainRenderer);
+        SDL_Surface *spriteSheet = IMG_Load(  "./image/power_cond_green.png" );
 
         // And check every file to see if it loaded successfully
         //
@@ -143,21 +175,43 @@ int main(int argc, const char *argv[])
                logSDLError("Failed to read texture");
         }
         
-        // Do teh render routine
-        // TODO have to write a render function that does the following:
-        // - Look at the state of the canvas
-        // - Draw the canvas
-        // - Draw the current "pen" sprite
-        // - Draw the menu if it's enabled
-        //
-        // Currently just viewing the spritesheet.
-        SDL_RenderClear( mainRenderer );
-        renderTexture( spriteSheet, mainRenderer, 0, 0 , SCREEN_WIDTH, SCREEN_HEIGHT);
+        SDL_Texture *testSprite = loadSprite( spriteSheet, mainRenderer, 2, 4 );
 
-        SDL_RenderPresent( mainRenderer );
-        SDL_Delay(2000);
+        SDL_Event event;
+        bool quit = false;
 
-        SDL_DestroyTexture(spriteSheet);
+        while ( !quit )
+        {
+                // Send each event to the appropraite handler.
+                while ( SDL_PollEvent( &event ) )
+                {
+                        if ( event.type == SDL_QUIT )
+                        {
+                                std::cout << "Recieved the quiting event. G-guess nobody likes me ;_;" << std::endl;
+                                quit = true; 
+                        }
+                }
+
+                // Do teh render routine
+                // TODO have to write a render function that does the following:
+                // - Look at the state of the canvas
+                // - Draw the canvas
+                // - Draw the current "pen" sprite
+                // - Draw the menu if it's enabled
+                //
+                // Currently just viewing the first column of sprites displayed horizontally.
+               // Note, need a loop that goes through each sprite in the sprite sheet and produces the appropriate texture. 
+
+                SDL_RenderClear( mainRenderer );
+                // Gotta change this line.
+                renderTexture( testSprite, mainRenderer, 0, 0, 32, 32 );
+
+                SDL_RenderPresent( mainRenderer);
+        }
+
+        // Clean up.
+        // And quit cleanly.
+        // SDL_DestroyTexture(spriteSheet);
         SDL_DestroyRenderer(mainRenderer);
         SDL_DestroyWindow(window);
 
