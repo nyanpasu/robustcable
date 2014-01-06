@@ -16,6 +16,7 @@
  * =====================================================================================
          */
 #include <iostream>
+#include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
@@ -44,68 +45,57 @@ void logSDLError( const std::string &message )
 }
 
 /**
- * Loads a BMP image into a texture, then onto the rendering device
- * @param file The image to load
- * @param renderer The renderer to load the texture onto
- * @return the loaded texture, or nullptr if something went wrong.
+ * Load a texture from a png file.
+ * @param filename
+ * @param renderer
  */
-SDL_Texture *loadTexture( const std::string &file, SDL_Renderer *renderer )
+SDL_Texture* loadTexture( const std::string filename, SDL_Renderer *renderer )
 {
-        SDL_Texture *texture = IMG_LoadTexture( renderer, file.c_str() );
-
-        if ( texture == nullptr )
-        {
-               logSDLError("Texture at loadTexture()");
-        }
+        SDL_Texture *texture = IMG_LoadTexture( renderer, filename.c_str() );
+        if ( texture == nullptr ) logSDLError( "Failed to load texture from image. " );
 
         return texture;
 }
 
 /**
- * Loads a (something) and producesa blitted surface
- * @param file 
- */
-SDL_Surface *blitSurface()
+* Draw an SDL_Texture to an SDL_Renderer at some destination rect
+* taking a clip of the texture if desired
+* @param tex The source texture we want to draw
+* @param rend The renderer we want to draw too
+* @param dst The destination rectangle to render the texture too
+* @param clip The sub-section of the texture to draw (clipping rect)
+*               default of nullptr draws the entire texture
+*/
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
+        SDL_Rect *clip = nullptr)
 {
+        SDL_RenderCopy(ren, tex, clip, &dst);
 }
 
 /**
  * Draw an SDL_Texture onto an SDL_Renderer at a selected postion
  * @param texture The source texture
  * @param renderer The destination renderer
- * @param x x coordinate
- * @param y y coordinate
- * @param w width of texture
- * @param h height of texture
+ * @param x
+ * @param y
+ * @param clip The clipping rect
  */
-void renderTexture( SDL_Texture *texture, SDL_Renderer *renderer, int x, int y, int w, int h )
+void renderTexture( SDL_Texture *texture, SDL_Renderer *renderer, int x, int y, SDL_Rect *clip = nullptr )
 {
         SDL_Rect destination;
         destination.x = x;
         destination.y = y;
-        destination.w = w;
-        destination.h = h;
 
-        SDL_RenderCopy( renderer, texture, NULL, &destination );
-}
+        if ( clip != nullptr )
+        {
+                destination.h = clip->h;
+                destination.w = clip->w;
+        } else
+        {
+                SDL_QueryTexture( texture, NULL, NULL, &destination.h, &destination.w );
+        }
 
-/**
- * Process a wire sprite sheet into seperate sheets based on the global constants
- * @param file The sprite sheet
- * @return the array containing each sprite.
- */
-SDL_Texture *loadSprite( SDL_Surface *spriteSheet, SDL_Renderer *renderer, int x, int y )
-{
-        SDL_Rect clip;
-        clip.x = x * SPRITE_SIZE;
-        clip.y = y * SPRITE_SIZE;
-        clip.w = SPRITE_SIZE;
-        clip.h = SPRITE_SIZE;
-
-        SDL_Surface *sprite;
-
-        SDL_BlitSurface( spriteSheet, NULL, sprite, NULL);
-        return SDL_CreateTextureFromSurface( renderer, sprite);
+        SDL_RenderCopy( renderer, texture, clip, &destination );
 }
 
 int main(int argc, const char *argv[])
@@ -175,14 +165,13 @@ int main(int argc, const char *argv[])
                logSDLError("Failed to read texture");
         }
         
-        SDL_Texture *testSprite = loadSprite( spriteSheet, mainRenderer, 2, 4 );
+        SDL_Texture *testSprite = loadTexture( "./image/power_cond_green.png", mainRenderer );
 
         SDL_Event event;
         bool quit = false;
 
         while ( !quit )
         {
-                // Send each event to the appropraite handler.
                 while ( SDL_PollEvent( &event ) )
                 {
                         if ( event.type == SDL_QUIT )
@@ -204,7 +193,12 @@ int main(int argc, const char *argv[])
 
                 SDL_RenderClear( mainRenderer );
                 // Gotta change this line.
-                renderTexture( testSprite, mainRenderer, 0, 0, 32, 32 );
+                SDL_Rect wireClip;
+                wireClip.x = 64;
+                wireClip.y = 64;
+                wireClip.w = 32;
+                wireClip.h = 32;
+                renderTexture( testSprite, mainRenderer, 0, 0, &wireClip );
 
                 SDL_RenderPresent( mainRenderer);
         }
